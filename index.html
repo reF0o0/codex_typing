@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Typing Practice</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f0f2f5;
+  color: #1e293b;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px 48px;
+}
+
+.container {
+  width: 100%;
+  max-width: 800px;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+header h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-right: auto;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+select, button {
+  font-family: inherit;
+  font-size: 0.875rem;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #1e293b;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+select:hover { border-color: #9ca3af; }
+select:focus, button:focus-visible { outline: 2px solid #3b82f6; outline-offset: 1px; }
+
+button.primary {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+  font-weight: 500;
+}
+button.primary:hover { background: #2563eb; border-color: #2563eb; }
+button.primary:disabled { background: #93c5fd; border-color: #93c5fd; cursor: not-allowed; }
+
+button.danger {
+  background: transparent;
+  color: #ef4444;
+  border-color: #fca5a5;
+}
+button.danger:hover { background: #fef2f2; }
+
+.practice-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.idle-hint {
+  text-align: center;
+  color: #94a3b8;
+  padding: 48px 0;
+  font-size: 0.938rem;
+}
+
+.target-display {
+  font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 1.125rem;
+  line-height: 1.8;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 120px;
+}
+
+.target-display .correct { color: #10b981; }
+.target-display .incorrect { color: #ef4444; background: #fef2f2; text-decoration: underline; text-decoration-color: #ef4444; }
+.target-display .untyped { color: #94a3b8; }
+
+.stats-bar {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.stats-bar .stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stats-bar .stat-value {
+  font-weight: 600;
+  color: #1e293b;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-bar .timer-warning { color: #ef4444; font-weight: 700; }
+
+#inputArea {
+  width: 100%;
+  font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 1.125rem;
+  line-height: 1.8;
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 2px solid #334155;
+  border-radius: 6px;
+  padding: 16px 20px;
+  resize: vertical;
+  min-height: 100px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+#inputArea:focus { border-color: #3b82f6; }
+#inputArea:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.results {
+  text-align: center;
+  padding: 32px 0;
+}
+
+.results h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.results-grid {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 24px;
+}
+
+.result-item {
+  text-align: center;
+}
+
+.result-item .value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #3b82f6;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-item .label {
+  font-size: 0.813rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.history-section h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 0.813rem;
+}
+
+.history-table th, .history-table td {
+  text-align: left;
+  padding: 10px 12px;
+}
+
+.history-table th {
+  background: #f8fafc;
+  font-weight: 500;
+  color: #64748b;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.history-table td {
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+
+.history-table tr:last-child td { border-bottom: none; }
+
+.history-table .text-preview {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-empty {
+  text-align: center;
+  color: #94a3b8;
+  padding: 32px 0;
+  font-size: 0.875rem;
+}
+
+.history-footer {
+  text-align: right;
+  margin-top: 12px;
+}
+
+.hidden { display: none !important; }
+
+@media (max-width: 600px) {
+  header { flex-direction: column; align-items: flex-start; }
+  .controls { width: 100%; }
+  .results-grid { gap: 16px; }
+  .result-item .value { font-size: 1.5rem; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Typing Practice</h1>
+    <div class="controls">
+      <select id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="medium" selected>Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+      <select id="timeLimit">
+        <option value="30">30s</option>
+        <option value="60" selected>60s</option>
+        <option value="0">Unlimited</option>
+        <option value="120">120s</option>
+      </select>
+      <button id="startBtn" class="primary">Start</button>
+      <button id="exitBtn" class="danger hidden">Exit</button>
+    </div>
+  </header>
+
+  <div class="practice-card">
+    <div id="practiceArea" class="hidden">
+      <div id="targetDisplay" class="target-display"></div>
+      <div class="stats-bar">
+        <div class="stat">Time: <span id="timer" class="stat-value">60s</span></div>
+        <div class="stat">WPM: <span id="liveWpm" class="stat-value">0</span></div>
+        <div class="stat">Accuracy: <span id="liveAccuracy" class="stat-value">100%</span></div>
+        <div class="stat">Chars: <span id="liveChars" class="stat-value">0</span></div>
+      </div>
+      <textarea id="inputArea" placeholder="Start typing here..." disabled></textarea>
+    </div>
+
+    <div id="resultsArea" class="hidden">
+      <div class="results">
+        <h2 id="resultsHeading">Practice Complete</h2>
+        <div class="results-grid">
+          <div class="result-item">
+            <div class="value" id="resultWpm">0</div>
+            <div class="label">WPM</div>
+          </div>
+          <div class="result-item">
+            <div class="value" id="resultAccuracy">0%</div>
+            <div class="label">Accuracy</div>
+          </div>
+          <div class="result-item">
+            <div class="value" id="resultTime">0s</div>
+            <div class="label">Time Used</div>
+          </div>
+        </div>
+        <button id="retryBtn" class="primary">Try Again</button>
+      </div>
+    </div>
+
+    <div id="idleHint" class="idle-hint">
+      Select difficulty and time, then click Start to begin.
+    </div>
+  </div>
+
+  <div class="history-section">
+    <h2>History</h2>
+    <div id="historyContent"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const CORPUS = {
+    easy: [
+      "A: Hi, how are you?\nB: I'm good, thanks! And you?\nA: Doing well. Have a nice day!",
+      "A: What time is it?\nB: It's almost noon.\nA: Let's grab lunch then.\nB: Sure, sounds good!",
+      "A: Did you sleep well?\nB: Yes, I slept great.\nA: That's good to hear.\nB: Thanks for asking!",
+      "A: Where are you from?\nB: I'm from Beijing.\nA: Oh, that's a nice city!\nB: Yes, I love it there.",
+      "A: Can you help me?\nB: Of course! What do you need?\nA: I can't find my keys.\nB: Let's look together.",
+      "A: It's so cold today.\nB: I know! I need a warm coat.\nA: Me too. Let's go inside.\nB: Good idea.",
+      "A: Happy birthday to you!\nB: Thank you so much!\nA: Did you get any nice gifts?\nB: Yes, a new book!",
+      "A: What's your favorite food?\nB: I really love pizza.\nA: Me too! Let's get some.\nB: Great idea!",
+      "A: I like your shirt.\nB: Thanks! It's new.\nA: Where did you buy it?\nB: At the mall downtown.",
+      "A: Are you free tonight?\nB: Yes, I have no plans.\nA: Want to watch a movie?\nB: Sure, what should we see?",
+      "A: How was your weekend?\nB: It was relaxing. I stayed home.\nA: Sometimes that's the best kind.\nB: Totally agree!",
+      "A: What do you do for work?\nB: I'm a teacher at the school.\nA: That must be rewarding.\nB: It really is, most days.",
+      "A: This coffee is really good.\nB: I know, right? Best in town.\nA: We should come here more often.\nB: Definitely!",
+      "A: Is this seat taken?\nB: No, go ahead and sit.\nA: Thanks, I appreciate it.\nB: No problem at all.",
+      "A: The sunset looks beautiful.\nB: It really does. So peaceful.\nA: I'm glad we came here.\nB: Me too. Perfect evening."
+    ],
+    medium: [
+      "A: Have you seen the new movie everyone is talking about?\nB: Not yet, but I've heard it's actually quite good.\nA: We should go watch it together this weekend.\nB: That sounds fun, but I'm busy on Saturday.\nA: How about Sunday afternoon, around two?\nB: Sunday works perfectly! Let's do it.",
+      "A: I'm thinking about changing my job next month.\nB: Really? That's a big decision. What's making you consider it?\nA: I feel like I've stopped learning new things here.\nB: I understand. Growth is important for a career.\nA: Exactly. I want something that challenges me more.\nB: Well, let me know if you need help with your resume.",
+      "A: Did you finish reading that book I lent you?\nB: Yes, and I couldn't put it down! The ending was so unexpected.\nA: I told you it was worth reading! Who was your favorite character?\nB: Definitely the detective. She was so clever and determined.\nA: She's my favorite too. Have you started the sequel yet?\nB: No, but I'm planning to buy it this week.",
+      "A: The weather forecast says it might rain tomorrow.\nB: Oh, that's too bad. I was planning to go hiking.\nA: Maybe you can postpone it until the weekend?\nB: That's a good point. Saturday looks sunny, actually.\nA: Perfect! You won't have to cancel your plans after all.\nB: Thanks for checking the forecast for me.",
+      "A: I tried that new restaurant on Main Street yesterday.\nB: How was it? I've been curious about their menu.\nA: Honestly, it was better than I expected. Fresh ingredients.\nB: What did you order? I need some recommendations.\nA: The pasta with mushrooms was outstanding. You should try it.\nB: I'll definitely order that when I go there next week.",
+      "A: Are you going to the concert on Friday night?\nB: I want to, but the tickets are a bit expensive for me.\nA: I understand. They did raise prices this year.\nB: It's frustrating because I really like the band.\nA: Maybe we can find someone selling a spare ticket?\nB: That's actually a smart idea. I'll check online later.",
+      "A: I've been trying to learn Spanish for the past few months.\nB: That's impressive! How's it going so far?\nA: It's challenging, but I can hold basic conversations now.\nB: That's great progress. How do you practice?\nA: I use an app every day and watch Spanish shows with subtitles.\nB: I should try that method. I want to learn French someday.",
+      "A: Do you think we should start the project early this time?\nB: Absolutely. Last time we rushed and made too many mistakes.\nA: I agree completely. Let's plan the first phase this week.\nB: I'll prepare a rough timeline for us to review on Wednesday.\nA: Sounds good. I'll gather the requirements by then.\nB: Great, we're already off to a better start.",
+      "A: My phone battery has been draining so fast lately.\nB: Have you checked which apps are using the most power?\nA: I haven't thought to look at that. Good suggestion.\nB: Sometimes background apps run without you realizing it.\nA: I'll check the settings and close anything unnecessary.\nB: If that doesn't work, you might need a new battery.",
+      "A: I adopted a cat from the shelter yesterday!\nB: That's wonderful! What does it look like?\nA: She's a small gray tabby with bright green eyes.\nB: Sounds adorable. Have you picked a name yet?\nA: I'm thinking of calling her Luna. It seems to fit.\nB: Luna is a lovely name. I'd love to meet her sometime.",
+      "A: The traffic was terrible on the highway this morning.\nB: I heard there was an accident near the bridge.\nA: That explains why it took me an extra forty minutes.\nB: I always check the traffic report before leaving now.\nA: That's a good habit. I should start doing that too.\nB: It has saved me from being late more than once.",
+      "A: What do you think about remote work these days?\nB: I actually prefer it. I get more done without distractions.\nA: I miss the office sometimes, especially the social part.\nB: That's fair. But the flexibility is hard to give up.\nA: True. Maybe a hybrid schedule would be the best of both.\nB: I think that's what most companies are moving toward.",
+      "A: Have you ever tried baking your own bread at home?\nB: I tried once, but it came out dense and disappointing.\nA: Don't give up! It took me several attempts to get it right.\nB: Really? Maybe I should try again with a simpler recipe.\nA: I can share my beginner recipe with you if you want.\nB: That would be amazing, thank you! I really appreciate it.",
+      "A: I need to buy a gift for my sister's birthday.\nB: What kind of things does she like?\nA: She's really into photography and outdoor activities.\nB: Maybe a nice camera strap or a portable tripod?\nA: A tripod is a great idea! She mentioned wanting one.\nB: Happy to help. I hope she has a wonderful birthday.",
+      "A: Did you hear about the new park they're building downtown?\nB: Yes, I read about it in the local news last week.\nA: It sounds like it will have a nice walking trail.\nB: And a community garden, which I'm excited about.\nA: I'd love to have a place to relax after work nearby.\nB: Same here. It should be finished by next spring."
+    ],
+    hard: [
+      "A: I've been analyzing the quarterly report, and the numbers are concerning.\nB: I noticed the same trend — customer retention dropped by nearly eight percent.\nA: Exactly. We need to address the root cause before it compounds further.\nB: I've scheduled a meeting with the product team; would you like to join?\nA: Absolutely. I'll bring the churn analysis I've been working on.\nB: Perfect. Between the two of us, we should have a comprehensive picture.\nA: Let's also loop in marketing — they might have insights we're missing.\nB: Good call. I'll extend the invitation and share the agenda beforehand.",
+      "A: What's your perspective on the upcoming policy changes?\nB: Frankly, I'm cautiously optimistic; the reforms are long overdue.\nA: I agree, but the implementation timeline seems overly ambitious.\nB: That's a valid concern — without proper infrastructure, it could backfire.\nA: Have you raised this point with the stakeholders yet?\nB: I presented a detailed risk assessment at Tuesday's briefing.\nA: How was the reception? Did they take your concerns seriously?\nB: Surprisingly, yes. They've agreed to a phased rollout instead.",
+      "A: I've been considering a career transition into data science.\nB: That's a significant pivot — what's driving the decision?\nA: I find myself drawn to the problem-solving aspect of it.\nB: It's a competitive field, but the demand is certainly there.\nA: I'm aware. I've already started taking online courses in Python and statistics.\nB: That's the right approach. Have you built any portfolio projects yet?\nA: Just a small sentiment-analysis tool. Nothing groundbreaking.\nB: Honestly, that's more than most beginners. Keep building on it.",
+      "A: The manuscript needs another round of edits before we submit it.\nB: I was afraid you'd say that — which sections are you unhappy with?\nA: The methodology chapter feels rushed, and the conclusion lacks punch.\nB: I'll rework the methodology; it's my area of expertise anyway.\nA: That would help tremendously. I'll focus on strengthening the argument.\nB: What about the literature review? It seemed solid to me.\nA: The review is fine — let's leave it untouched for now.\nB: Sounds like a plan. I'll have my revisions done by Friday.",
+      "A: Have you ever questioned whether this industry is sustainable long-term?\nB: Constantly. The pace of change is exhausting and often directionless.\nA: Yet here we are, still showing up every morning.\nB: Habit, perhaps. Or the uncomfortable truth that alternatives aren't better.\nA: That's a bleak way to frame it — but I can't say you're wrong.\nB: Sorry, I didn't mean to sound cynical. There are still bright spots.\nA: Like what? I could use some optimism right now.\nB: The people. Some of the smartest, most dedicated folks I've ever worked with.",
+      "A: I'm organizing a fundraising event for the local shelter next month.\nB: That's admirable — what kind of event are you planning?\nA: A silent auction combined with a small concert. Something engaging.\nB: Have you secured a venue yet? That's usually the hardest part.\nA: Yes, the community center agreed to host us at a reduced rate.\nB: Excellent. Do you need volunteers? I'd be happy to help coordinate.\nA: Actually, I could use someone to handle the social media promotion.\nB: Consider it done. Send me the details and I'll start drafting posts.",
+      "A: Your presentation yesterday was exceptional — concise and persuasive.\nB: Thank you. I spent far too long refining the narrative arc.\nA: The effort showed. Especially the transition between sections two and three.\nB: That was the trickiest part; I must have rewritten it a dozen times.\nA: Was there any pushback from the executive team afterward?\nB: Minor reservations about the budget, but they approved the proposal overall.\nA: Congratulations — that's a significant milestone for the department.\nB: It feels like a weight has been lifted, I won't lie.",
+      "A: I stumbled across your photography portfolio online — stunning work.\nB: Oh, thank you! It's mostly a hobby, but I take it seriously.\nA: The landscape series from Iceland is particularly breathtaking.\nB: That trip was transformative. The light there is unlike anywhere else.\nA: How long did it take you to develop that kind of technical skill?\nB: Years of trial and error, honestly. Plus a lot of patient friends.\nA: The patience shows. Every composition feels deliberate and balanced.\nB: That means a lot coming from someone with your design background.",
+      "A: I'm struggling to decide between two graduate programs.\nB: What are the key differences that you're weighing?\nA: One has a stronger reputation; the other offers more flexibility.\nB: Reputation opens doors, but flexibility lets you breathe. Tough call.\nA: Exactly. I keep going back and forth without reaching a conclusion.\nB: Have you spoken to alumni from either program?\nA: Not yet — that's an obvious step I've been neglecting.\nB: I'd prioritize those conversations. Firsthand experience is invaluable.",
+      "A: The client requested a complete redesign of the onboarding flow.\nB: Again? We just overhauled it three months ago.\nA: I know, but their user-testing data shows significant drop-off.\nB: Alright, what specific pain points did they identify?\nA: The verification step is confusing, and the tutorial is too lengthy.\nB: We can streamline both without a full rebuild, honestly.\nA: That's what I was hoping you'd say. Can you draft a proposal?\nB: I'll have something on your desk by end of day tomorrow.",
+      "A: I've been reading about the philosophy of Stoicism lately.\nB: Interesting choice — what drew you to it?\nA: A friend recommended it during a particularly stressful period.\nB: Did you find it helpful, or is it too abstract to apply?\nA: Surprisingly practical. The focus on what you can control resonates deeply.\nB: I've always been curious but never knew where to start.\nA: Try Marcus Aurelius's Meditations. It's short but profound.\nB: I'll add it to my reading list. Thanks for the suggestion.",
+      "A: Do you believe artificial intelligence will fundamentally change education?\nB: It already is, though not always in the ways people predicted.\nA: I worry about students outsourcing their critical thinking to machines.\nB: That's a legitimate concern, but AI can also amplify good teaching.\nA: How so? I'm genuinely curious to hear your perspective.\nB: It can personalize feedback at scale — something no human teacher can do.\nA: That's compelling. I hadn't considered the augmentation angle.\nB: The key is designing systems that support, not replace, human judgment.",
+      "A: I'm planning a solo trip to Southeast Asia this winter.\nB: That sounds incredible. Which countries are on your itinerary?\nA: Thailand, Vietnam, and Cambodia — roughly three weeks total.\nB: Ambitious timeline. Do you speak any of the local languages?\nA: Not fluently, but I'm learning basic phrases in each one.\nB: That effort alone will transform your experience. People appreciate it.\nA: That's what I've heard. Any tips from your travels in the region?\nB: Pack light, stay flexible, and never skip the street food.",
+      "A: The software release has been delayed for the third time now.\nB: I'm not surprised — the testing phase uncovered several critical bugs.\nA: Stakeholders are getting impatient, and I can't say I blame them.\nB: Would they prefer a product that ships on time or one that works?\nA: Point taken. But we need to communicate the rationale more clearly.\nB: I'll draft a transparent status update for the weekly newsletter.\nA: Make it candid but constructive. No finger-pointing.\nB: Understood. I'll focus on the path forward, not the setbacks.",
+      "A: I attended a fascinating lecture on urban planning yesterday.\nB: What was the central thesis? Urban planning can be a broad topic.\nA: The speaker argued that walkable cities improve public health dramatically.\nB: That's well-documented, but implementation always faces political hurdles.\nA: She addressed that directly — cited examples from Copenhagen and Tokyo.\nB: Those are excellent case studies. Did she offer practical takeaways?\nA: Yes, she proposed incremental changes that don't require massive budgets.\nB: I'd love to see the slides if they're available online."
+    ]
+  };
+
+  const HISTORY_KEY = 'typing-practice-history';
+  const MAX_HISTORY = 50;
+
+  const difficultySel = document.getElementById('difficulty');
+  const timeLimitSel = document.getElementById('timeLimit');
+  const startBtn = document.getElementById('startBtn');
+  const retryBtn = document.getElementById('retryBtn');
+  const exitBtn = document.getElementById('exitBtn');
+  const practiceArea = document.getElementById('practiceArea');
+  const resultsArea = document.getElementById('resultsArea');
+  const idleHint = document.getElementById('idleHint');
+  const targetDisplay = document.getElementById('targetDisplay');
+  const inputArea = document.getElementById('inputArea');
+  const timerEl = document.getElementById('timer');
+  const liveWpmEl = document.getElementById('liveWpm');
+  const liveAccuracyEl = document.getElementById('liveAccuracy');
+  const liveCharsEl = document.getElementById('liveChars');
+  const resultWpmEl = document.getElementById('resultWpm');
+  const resultAccuracyEl = document.getElementById('resultAccuracy');
+  const resultTimeEl = document.getElementById('resultTime');
+  const resultsHeading = document.getElementById('resultsHeading');
+  const historyContent = document.getElementById('historyContent');
+
+  let state = {
+    phase: 'idle',
+    difficulty: 'medium',
+    timeLimit: 60,
+    timeRemaining: 60,
+    targetText: '',
+    targetChars: [],
+    startTime: null,
+    timerInterval: null,
+    completedEarly: false
+  };
+
+  function loadHistory() {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveHistory(entry) {
+    try {
+      const history = loadHistory();
+      history.unshift(entry);
+      if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    } catch (e) { /* localStorage unavailable, silently skip */ }
+  }
+
+  function clearHistory() {
+    try { localStorage.removeItem(HISTORY_KEY); } catch (e) {}
+    renderHistory();
+  }
+
+  function pickDialogue(difficulty) {
+    const pool = CORPUS[difficulty] || CORPUS.medium;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function renderTarget() {
+    const chars = [...state.targetText];
+    state.targetChars = chars;
+    targetDisplay.innerHTML = chars.map((ch, i) => {
+      if (ch === '\n') return `<span data-idx="${i}" class="untyped"><br></span>`;
+      let esc = ch;
+      if (ch === '&') esc = '&amp;';
+      else if (ch === '<') esc = '&lt;';
+      else if (ch === '>') esc = '&gt;';
+      return `<span data-idx="${i}" class="untyped">${esc}</span>`;
+    }).join('');
+  }
+
+  function updateComparison() {
+    const input = inputArea.value;
+    const spans = targetDisplay.querySelectorAll('span');
+    let correctCount = 0;
+    let allCorrect = true;
+
+    spans.forEach((span, i) => {
+      if (i < input.length) {
+        if (input[i] === state.targetChars[i]) {
+          span.className = 'correct';
+          correctCount++;
+        } else {
+          span.className = 'incorrect';
+          allCorrect = false;
+        }
+      } else {
+        span.className = 'untyped';
+        allCorrect = false;
+      }
+    });
+
+    const totalTyped = input.length;
+    const accuracy = totalTyped > 0 ? Math.round((correctCount / totalTyped) * 100) : 100;
+    const elapsed = (Date.now() - state.startTime) / 1000;
+    const wpm = elapsed > 0 ? Math.round((correctCount / 5) / (elapsed / 60)) : 0;
+
+    liveWpmEl.textContent = wpm;
+    liveAccuracyEl.textContent = accuracy + '%';
+    liveCharsEl.textContent = totalTyped;
+
+    if (allCorrect && input.length >= state.targetChars.length) {
+      state.completedEarly = true;
+      endPractice();
+    }
+  }
+
+  function tick() {
+    if (state.timeLimit === 0) {
+      state.timeRemaining++;
+      timerEl.textContent = state.timeRemaining + 's';
+    } else {
+      state.timeRemaining--;
+      timerEl.textContent = state.timeRemaining + 's';
+    }
+
+    const elapsed = (Date.now() - state.startTime) / 1000;
+    const input = inputArea.value;
+    let correctCount = 0;
+    for (let i = 0; i < Math.min(input.length, state.targetChars.length); i++) {
+      if (input[i] === state.targetChars[i]) correctCount++;
+    }
+    const wpm = elapsed > 0 ? Math.round((correctCount / 5) / (elapsed / 60)) : 0;
+    liveWpmEl.textContent = wpm;
+
+    if (state.timeLimit !== 0) {
+      if (state.timeRemaining <= 10) {
+        timerEl.classList.add('timer-warning');
+      }
+
+      if (state.timeRemaining <= 0) {
+        endPractice();
+      }
+    }
+  }
+
+  function startPractice() {
+   state.difficulty = difficultySel.value;
+   state.timeLimit = parseInt(timeLimitSel.value, 10);
+   state.timeRemaining = state.timeLimit;
+   state.targetText = pickDialogue(state.difficulty);
+   state.targetChars = [];
+   state.startTime = Date.now();
+   state.phase = 'active';
+   state.completedEarly = false;
+
+   renderTarget();
+   inputArea.value = '';
+   inputArea.disabled = false;
+   inputArea.focus();
+    exitBtn.classList.remove('hidden');
+
+   timerEl.textContent = state.timeRemaining + 's';
+   timerEl.classList.remove('timer-warning');
+   liveWpmEl.textContent = '0';
+   liveAccuracyEl.textContent = '100%';
+   liveCharsEl.textContent = '0';
+
+   practiceArea.classList.remove('hidden');
+   resultsArea.classList.add('hidden');
+   idleHint.classList.add('hidden');
+   startBtn.disabled = true;
+   difficultySel.disabled = true;
+   timeLimitSel.disabled = true;
+
+   clearInterval(state.timerInterval);
+   state.timerInterval = setInterval(tick, 1000);
+ }
+
+  function endPractice() {
+   clearInterval(state.timerInterval);
+   state.timerInterval = null;
+   state.phase = 'finished';
+
+   inputArea.disabled = true;
+   startBtn.disabled = false;
+   difficultySel.disabled = false;
+   timeLimitSel.disabled = false;
+
+   const input = inputArea.value;
+   let correctCount = 0;
+   for (let i = 0; i < Math.min(input.length, state.targetChars.length); i++) {
+     if (input[i] === state.targetChars[i]) correctCount++;
+   }
+   const totalTyped = input.length;
+   const accuracy = totalTyped > 0 ? Math.round((correctCount / totalTyped) * 100) : 100;
+   const elapsedSec = Math.round((Date.now() - state.startTime) / 1000);
+   const elapsedMin = elapsedSec / 60;
+   const wpm = elapsedMin > 0 ? Math.round((correctCount / 5) / elapsedMin) : 0;
+
+   resultWpmEl.textContent = wpm;
+   resultAccuracyEl.textContent = accuracy + '%';
+   resultTimeEl.textContent = elapsedSec + 's';
+   resultsHeading.textContent = state.completedEarly ? 'Well Done!' : (state.timeLimit === 0 ? 'Practice Complete' : 'Time\'s Up!');
+
+   practiceArea.classList.add('hidden');
+   resultsArea.classList.remove('hidden');
+    exitBtn.classList.remove('hidden');
+
+   saveHistory({
+     date: new Date().toLocaleString('en-US', { hour12: false }),
+     difficulty: state.difficulty,
+     timeLimit: state.timeLimit,
+     wpm: wpm,
+     accuracy: accuracy,
+     elapsedSec: elapsedSec,
+     textPreview: state.targetText.substring(0, 80).replace(/\n/g, ' ')
+   });
+
+   renderHistory();
+ }
+
+  function renderHistory() {
+    const history = loadHistory();
+    if (history.length === 0) {
+      historyContent.innerHTML = '<div class="history-empty">No practice history yet. Start a session to see your results here.</div>';
+      return;
+    }
+
+    const rows = history.map((entry, i) => {
+      const diffLabel = { easy: 'Easy', medium: 'Medium', hard: 'Hard' }[entry.difficulty] || entry.difficulty;
+      return `<tr>
+        <td>${entry.date || '-'}</td>
+        <td>${diffLabel}</td>
+        <td>${entry.timeLimit === 0 ? '∞' : ((entry.timeLimit || '-') + 's')}</td>
+        <td>${entry.wpm != null ? entry.wpm : '-'}</td>
+        <td>${entry.accuracy != null ? entry.accuracy + '%' : '-'}</td>
+        <td class="text-preview" title="${(entry.textPreview || '').replace(/"/g, '&quot;')}">${entry.textPreview || '-'}</td>
+      </tr>`;
+    }).join('');
+
+    historyContent.innerHTML = `
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Difficulty</th>
+            <th>Time</th>
+            <th>WPM</th>
+            <th>Accuracy</th>
+            <th>Text</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="history-footer">
+        <button id="clearHistoryBtn" class="danger">Clear History</button>
+      </div>`;
+
+    document.getElementById('clearHistoryBtn').addEventListener('click', function() {
+      if (confirm('Clear all practice history?')) clearHistory();
+    });
+  }
+
+
+  function exitPractice() {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+    state.phase = 'idle';
+
+    inputArea.disabled = true;
+    inputArea.value = '';
+    startBtn.disabled = false;
+    difficultySel.disabled = false;
+    timeLimitSel.disabled = false;
+    exitBtn.classList.add('hidden');
+
+    practiceArea.classList.add('hidden');
+    resultsArea.classList.add('hidden');
+    idleHint.classList.remove('hidden');
+  }
+
+  startBtn.addEventListener('click', startPractice);
+ retryBtn.addEventListener('click', startPractice);
+  exitBtn.addEventListener('click', exitPractice);
+
+  inputArea.addEventListener('input', updateComparison);
+
+  inputArea.addEventListener('keydown', function(e) {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+    }
+    if (e.key === 'Enter') {
+      var nextIdx = inputArea.value.length;
+      if (nextIdx < state.targetChars.length && state.targetChars[nextIdx] !== '\n') {
+        e.preventDefault();
+      } else if (nextIdx >= state.targetChars.length) {
+        e.preventDefault();
+      }
+    }
+    if (state.phase !== 'active') {
+      e.preventDefault();
+    }
+  });
+
+  renderHistory();
+})();
+</script>
+</body>
+</html>
